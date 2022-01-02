@@ -11,8 +11,23 @@ BASE_URL = "https://data.epo.org/expert-services/index.html"
 
 
 def find_text(soup, text):
+    import pdb; pdb.set_trace()
     text_string = soup.find('divtitle', class_='coGrey skiptranslate', text=re.compile(text)).findNext('p').text
     return unicodedata.normalize("NFKD", text_string)
+
+
+def get_patent_data(driver):
+    document = driver.find_element(By.CLASS_NAME, 'pDocument')
+    doc_html = document.get_attribute('innerHTML')
+    soup = BeautifulSoup(doc_html, 'html.parser')
+    return {
+        'title': find_text(soup, 'Title (en)'),
+        'abstract': find_text(soup, 'Abstract (en)'),
+        'publication': find_text(soup, 'Publication'),
+        'application': find_text(soup, 'Application'),
+        'ipc_numbers': find_text(soup, 'IPC'),
+    }
+
 
 def main(year: int):
     driver = set_up_selenium()
@@ -32,44 +47,17 @@ def main(year: int):
     driver.find_element(By.ID, 'goToResultLink').click()
     sleep_time(2)
     sleep_time(2)
-    document = driver.find_element(By.CLASS_NAME, 'pDocument')
+    patents = []
+    patent = get_patent_data(driver)
     doc_html = driver.page_source
     soup = BeautifulSoup(doc_html, 'html.parser')
-    title = find_text(soup, 'Title (en)')
-    abstract = find_text(soup, 'Abstract (en)')
-    publication = find_text(soup, 'Publication')
-    application = find_text(soup, 'Application')
-    ipc_numbers = find_text(soup, 'IPC')
-    datas = [
-        {
-            'title': title,
-            'abstract': abstract,
-            'publication': publication,
-            'application': application,
-            'ipc_numbers': ipc_numbers, 
-        }
-    ]
     next_button = soup.find('div', {'data-dojo-attach-point':"btNextDocument"})
     while 'buttonDisabled' not in next_button.get('class'):
         driver.find_element(By.CLASS_NAME, 'btNextDocument').click()
         sleep_time(2)
-        document = driver.find_element(By.CLASS_NAME, 'pDocument')
-        doc_html = driver.page_source
-        soup = BeautifulSoup(doc_html, 'html.parser')
-        title = find_text(soup, 'Title (en)')
-        abstract = find_text(soup, 'Abstract')
-        publication = find_text(soup, 'Publication')
-        application = find_text(soup, 'Application')
-        ipc_numbers = find_text(soup, 'IPC')
-        data = {
-            'title': title,
-            'abstract': abstract,
-            'publication': publication,
-            'application': application,
-            'ipc_numbers': ipc_numbers, 
-        }
-        datas.append(data)
-    df = pd.DataFrame(datas)
+        patent = get_patent_data(driver)
+        patents.append(patent)
+    df = pd.DataFrame(patents)
     df.to_csv(f'{year}.csv', index=False)
 
 if __name__ == '__main__':
