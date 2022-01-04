@@ -3,6 +3,7 @@ import pandas as pd
 import re
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
+import traceback
 import unicodedata
 from utils import *
 
@@ -32,39 +33,45 @@ def find_ipc_numbers(soup, text, index):
         return unicodedata.normalize("NFKD", numbers[loop].text)
 
 
-def get_patent_data(driver):
-    document = driver.find_element(By.CLASS_NAME, 'pDocument')
-    doc_html = document.get_attribute('innerHTML')
-    soup = BeautifulSoup(doc_html, 'html.parser')
+def find_applicants_and_inventors(soup, data, key):
+    element = soup.find('divtitle', class_='coGrey skiptranslate', text=re.compile(key))
+    low_key = key.lower()
+    for i in range(1, 11):
+        ul = element.find_next('ul')
+        if ul:
+            applicants = element.find_next('ul').find_all('li')
+            if i < len(applicants) or i == len(applicants):
+                index = i - 1
+                li = applicants[index]
+                data[f'{low_key}_{i}'] = li.p.find(text=True)
+                data[f'{low_key}_address_{i}'] = unicodedata.normalize("NFKD", li.span.text)
+            else:
+                data[f'{low_key}_{i}'] = None
+                data[f'{low_key}_address_{i}'] = None
+        else:
+            data[f'{low_key}_{i}'] = element.find_next('p').span.text
+            address = element.find_next('p').span.find_next('span')
+            data[f'{low_key}_address_{i}'] = unicodedata.normalize("NFKD", address.text)
+    return data
+
+
+def get_patent_data(soup):
+    application = find_text(soup, 'Application')
+    application_date = application.split(" ")[-1]
+    publication = find_text(soup, 'Publication')
+    publication_number = re.sub("[\(\[].*?[\)\]]", "", publication)  # remove brackets
     data = {
         'title': find_text(soup, 'Title (en)'),
         'abstract': find_text(soup, 'Abstract'),
-        'publication': find_text(soup, 'Publication'),
-        'application': find_text(soup, 'Application'),
+        'publication_number': publication_number,
+        'application_date': application_date,
         'ipc_number_1': find_ipc_numbers(soup, 'IPC', 1),
         'ipc_number_2': find_ipc_numbers(soup, 'IPC', 2),
         'ipc_number_3': find_ipc_numbers(soup, 'IPC', 3),
-        'applicant_1': '',
-        'address_1': '',
-        'applicant_2': '',
-        'address_2': '',
-        'applicant_3': '',
-        'address_3': '',
-        'applicant_4': '',
-        'address_4': '',
-        'applicant_5': '',
-        'address_5': '',
-        'applicant_6': '',
-        'address_6': '',
-        'applicant_7': '',
-        'address_7': '',
-        'applicant_8': '',
-        'address_8': '',
-        'applicant_9': '',
-        'address_9': '',
-        'applicant_10': '',
-        'address_10': '',
     }
+    data = find_applicants_and_inventors(soup, data, 'Applicant')
+    data = find_applicants_and_inventors(soup, data, 'Inventor')
+    print('data', data)
     return data
 
 
@@ -87,14 +94,26 @@ def main(year: int):
     sleep_time(2)
     sleep_time(2)
     patents = []
-    patent = get_patent_data(driver)
+
+    document = driver.find_element(By.CLASS_NAME, 'pDocument')
+    document_html = document.get_attribute('innerHTML')
+    soup = BeautifulSoup(document_html, 'html.parser')
+    
+    patent = get_patent_data(soup)
     doc_html = driver.page_source
     soup = BeautifulSoup(doc_html, 'html.parser')
     next_button = soup.find('div', {'data-dojo-attach-point':"btNextDocument"})
     while 'buttonDisabled' not in next_button.get('class'):
         driver.find_element(By.CLASS_NAME, 'btNextDocument').click()
         sleep_time(2)
-        patent = get_patent_data(driver)
+        document = driver.find_element(By.CLASS_NAME, 'pDocument')
+        doc_html = document.get_attribute('innerHTML')
+        soup = BeautifulSoup(doc_html, 'html.parser')
+        try:
+            patent = get_patent_data(soup)
+        except Exception:
+            print(traceback.format_exc())
+            import pdb; pdb.set_trace()
         patents.append(patent)
     df = pd.DataFrame(patents)
     df.to_csv(f'{year}.csv', index=False)
