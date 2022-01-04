@@ -1,7 +1,7 @@
 import os
+import platform
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
-
 from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.common.exceptions import SessionNotCreatedException
 from selenium.webdriver.support.ui import Select
@@ -22,7 +22,8 @@ def set_up_selenium():
     options.add_argument("--start-maximized")
     # options.add_argument("--headless")
     home = os.getcwd()
-    driver_path = os.path.join(home, 'webdriver', 'mac', 'chromedriver')
+    system = platform.system().lower()
+    driver_path = os.path.join(home, 'webdriver', system, 'chromedriver')
     try:
         return webdriver.Chrome(options=options, executable_path=driver_path)
     except SessionNotCreatedException as e:
