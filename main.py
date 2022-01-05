@@ -17,7 +17,13 @@ def find_text(soup, text):
     element = soup.find('divtitle', class_='coGrey skiptranslate', text=text)
     if not element:
         element = soup.find('divtitle', class_='coGrey skiptranslate', text=re.compile(text))
-    text_string = element.find_next('p').text
+    try:
+        text_string = element.find_next('p').text
+    except AttributeError as err:
+        if text == 'Abstract':
+            return None
+        with open('log.txt', 'a') as f:
+            f.write(str(traceback.format_exc()))
     return unicodedata.normalize("NFKD", text_string)
 
 
@@ -101,7 +107,8 @@ def main(year: int):
     doc_html = driver.page_source
     soup = BeautifulSoup(doc_html, 'html.parser')
     documentCount = soup.find('span', {'data-dojo-attach-point':"documentCount"})
-    documentCount = int(documentCount.text)
+    count = unicodedata.normalize("NFKD", documentCount.text)
+    documentCount = int(count.replace(" ", ""))
 
     for _ in range(documentCount):
         document = driver.find_element(By.CLASS_NAME, 'pDocument')
@@ -111,7 +118,7 @@ def main(year: int):
             patent = get_patent_data(soup)
         except Exception:
             print(traceback.format_exc())
-            with open('log.txt', 'w') as f:
+            with open('log.txt', 'a') as f:
                 f.write(str(traceback.format_exc()))
             continue
         patents.append(patent)
@@ -121,5 +128,5 @@ def main(year: int):
         sleep_time(2)
 
 if __name__ == '__main__':
-    year = 2021
+    year = 2020
     main(year)
