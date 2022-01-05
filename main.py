@@ -98,11 +98,6 @@ def main(year: int):
     sleep_time(2)
     patents = []
 
-    document = driver.find_element(By.CLASS_NAME, 'pDocument')
-    document_html = document.get_attribute('innerHTML')
-    soup = BeautifulSoup(document_html, 'html.parser')
-    
-    patent = get_patent_data(soup)
     doc_html = driver.page_source
     soup = BeautifulSoup(doc_html, 'html.parser')
     documentCount = soup.find('span', {'data-dojo-attach-point':"documentCount"})
@@ -116,6 +111,9 @@ def main(year: int):
             patent = get_patent_data(soup)
         except Exception:
             print(traceback.format_exc())
+            with open('log.txt', 'w') as f:
+                f.write(str(traceback.format_exc()))
+            continue
         patents.append(patent)
         df = pd.DataFrame(patents)
         df.to_excel(f'patents_{year}.xlsx', index=False)
