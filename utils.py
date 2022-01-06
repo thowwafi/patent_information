@@ -3,6 +3,7 @@ import platform
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options as ChromeOptions
+from selenium.webdriver.firefox.options import Options as FOptions
 from selenium.common.exceptions import SessionNotCreatedException
 from selenium.webdriver.support.ui import Select
 import time
@@ -16,26 +17,30 @@ def sleep_time(number):
         time.sleep(1)
 
 
-def set_up_selenium():
-    options = ChromeOptions()
+def set_up_selenium(browser='chrome'):
+    options = ChromeOptions() if browser == 'chrome' else FOptions()
     options.add_argument("--window-size=1920,1080")
     options.add_argument("--start-maximized")
     # options.add_argument("--headless")
     home = os.getcwd()
     system = platform.system().lower()
-    driver_path = os.path.join(home, 'webdriver', system, 'chromedriver')
-    try:
-        return webdriver.Chrome(options=options, executable_path=driver_path)
-    except SessionNotCreatedException as e:
-        message = str(e)
-        print(message)
-        version_number = message.split('version is ')[1][:12]
-        download_url = "https://chromedriver.storage.googleapis.com/" + version_number +"/chromedriver_linux64.zip"
-        print(download_url)
-        latest_driver_zip = wget.download(download_url, 'chromedriver.zip')
-        print(latest_driver_zip)
-        path = os.path.join(home, 'webdriver', 'mac')
-        with zipfile.ZipFile(latest_driver_zip, 'r') as zip_ref:
-            zip_ref.extractall(path)
-        os.remove(latest_driver_zip)
-        return webdriver.Chrome(options=options, executable_path=driver_path)
+    if browser == 'chrome':
+        driver_path = os.path.join(home, 'webdriver', system, 'chromedriver')
+        try:
+            return webdriver.Chrome(options=options, executable_path=driver_path)
+        except SessionNotCreatedException as e:
+            message = str(e)
+            print(message)
+            version_number = message.split('version is ')[1][:12]
+            download_url = "https://chromedriver.storage.googleapis.com/" + version_number +"/chromedriver_linux64.zip"
+            print(download_url)
+            latest_driver_zip = wget.download(download_url, 'chromedriver.zip')
+            print(latest_driver_zip)
+            path = os.path.join(home, 'webdriver', 'mac')
+            with zipfile.ZipFile(latest_driver_zip, 'r') as zip_ref:
+                zip_ref.extractall(path)
+            os.remove(latest_driver_zip)
+            return webdriver.Chrome(options=options, executable_path=driver_path)
+    else:
+        driver_path = os.path.join(home, 'webdriver', system, 'geckodriver')
+        return webdriver.Firefox(options=options, executable_path=driver_path)
