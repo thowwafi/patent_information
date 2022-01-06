@@ -70,19 +70,31 @@ def get_patent_data(soup):
     application_date = application.split(" ")[-1]
     publication = find_text(soup, 'Publication')
     publication_number = re.sub("[\(\[].*?[\)\]]", "", publication)  # remove brackets
-    data = {
-        'publication_number': publication_number,
-        'application_date': application_date,
-        'title': find_text(soup, 'Title (en)'),
-        'ipc_number_1': find_ipc_numbers(soup, 'IPC', 1),
-        'ipc_number_2': find_ipc_numbers(soup, 'IPC', 2),
-        'ipc_number_3': find_ipc_numbers(soup, 'IPC', 3),
-        'abstract': find_text(soup, 'Abstract'),
-    }
+    publication_date = publication.split(" ")[-1]
+    data = {}
     data = find_applicants_and_inventors(soup, data, 'Applicant')
+    data['title'] = find_text(soup, 'Title (en)')
+    data['abstract'] = find_text(soup, 'Abstract')
+    data['publication_number'] = publication_number
+    data['publication_date'] = publication_date
+    data['application_number'] = application
+    data['application_date'] = application_date
+    data['ipc_number_1'] = find_ipc_numbers(soup, 'IPC', 1)
+    data['ipc_number_2'] = find_ipc_numbers(soup, 'IPC', 2)
+    data['ipc_number_3'] = find_ipc_numbers(soup, 'IPC', 3)
     data = find_applicants_and_inventors(soup, data, 'Inventor')
     print('data', data)
     return data
+
+class text_to_change(object):
+    
+    def __init__(self, locator, text):
+        self.locator = locator
+        self.text = text
+
+    def __call__(self, driver):
+        actual_text = driver.find_element(*self.locator).text
+        return actual_text != self.text
 
 
 def main(year: int):
@@ -90,7 +102,7 @@ def main(year: int):
     driver.get(BASE_URL)
     WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.ID, "dijit_form_Button_0_label"))).click()
     sleep_time(2)
-    driver.find_element(By.ID, 'dijit__WidgetsInTemplateMixin_1').click()
+    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.ID, 'dijit__WidgetsInTemplateMixin_1'))).click()
     sleep_time(2)
     driver.find_elements(By.CLASS_NAME, 'CodeMirror')[0].click()
     actions = ActionChains(driver)
@@ -110,7 +122,12 @@ def main(year: int):
     count = unicodedata.normalize("NFKD", documentCount.text)
     documentCount = int(count.replace(" ", ""))
 
+    text_before = ''
     for _ in range(documentCount):
+        print('text_before', text_before)
+        WebDriverWait(driver, 10).until(
+            text_to_change((By.CLASS_NAME, "titleContainer"), text_before)
+        )
         document = driver.find_element(By.CLASS_NAME, 'pDocument')
         doc_html = document.get_attribute('innerHTML')
         soup = BeautifulSoup(doc_html, 'html.parser')
@@ -124,9 +141,13 @@ def main(year: int):
         patents.append(patent)
         df = pd.DataFrame(patents)
         df.to_excel(f'patents_{year}.xlsx', index=False)
+        text_before = driver.find_element(By.CLASS_NAME, 'titleContainer').text
         driver.find_element(By.CLASS_NAME, 'btNextDocument').click()
-        sleep_time(2)
+
 
 if __name__ == '__main__':
-    year = 2020
+    year = 2021
     main(year)
+
+
+# https://data.epo.org/pise-server/rest/databases/EPAB2022001/documents/EP3741204A120201125?section=BIBLIOGRAPHIC_DATA&sectionType=TEXTUAL&searchId=31277645-9ebd-41fc-82f6-e371062b45a7&field=TIEN&field=TIDE&field=TIFR&field=ABEN&field=ABDE&field=ABFR&field=EP_&field=APN_DOC&field=PRN_DOC&field=PAAP&field=DIAP&field=DCS&field=DXS&field=DVS&field=IC17&field=ICF&field=CPC&field=CSET&field=APP_WORD&field=INV_WORD&field=REP_WORD&field=IPUN_DOC&field=IAPN_DOC&field=CPAP_DOC&field=CNAP_DOC&field=CPEP&field=CNEP&field=COD&field=PUA12&field=PUA3&field=PUB1&field=PUB2&field=PUB3&field=ISFAM&field=IFAM&field=CLEN&field=CLDE&field=CLFR&format=HTML&request.preventCache=1641457001517
