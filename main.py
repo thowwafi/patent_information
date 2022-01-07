@@ -1,3 +1,4 @@
+import ast
 from bs4 import BeautifulSoup
 import pandas as pd
 import re
@@ -53,19 +54,29 @@ def find_inventors(soup, data):
                 index = i - 1
                 li = applicants[index]
                 name = li.p.find(text=True)
-                data[f'{low_key}_last_name_{i}'] = name.split(',')[0]
-                data[f'{low_key}_first_name_{i}'] = " ".join(name.split(',')[1:])
-                data[f'{low_key}_address_{i}'] = unicodedata.normalize("NFKD", li.span.text)
+                if name == 'The other inventor has waived his right to be thus mentioned.':
+                    data[f'{low_key}_last_name_{i}'] = None
+                    data[f'{low_key}_first_name_{i}'] = None
+                else:
+                    data[f'{low_key}_last_name_{i}'] = name.split(',')[0]
+                    data[f'{low_key}_first_name_{i}'] = " ".join(name.split(',')[1:]).strip()
+                address = li.span
+                data[f'{low_key}_address_{i}'] = unicodedata.normalize("NFKD", address.text) if address else None
             else:
                 data[f'{low_key}_last_name_{i}'] = None
                 data[f'{low_key}_first_name_{i}'] = None
                 data[f'{low_key}_address_{i}'] = None
     else:
         name = element.find_next('p').span.text
-        data[f'{low_key}_last_name_1'] = name.split(',')[0]
-        data[f'{low_key}_first_name_1'] = " ".join(name.split(',')[1:])
-        address = element.find_next('p').span.find_next('span')
-        data[f'{low_key}_address_1'] = unicodedata.normalize("NFKD", address.text)
+        if name == "The designation of the inventor has not yet been filed":
+            data[f'{low_key}_last_name_1'] = None
+            data[f'{low_key}_first_name_1'] = None
+            data[f'{low_key}_address_1'] = None
+        else:
+            data[f'{low_key}_last_name_1'] = name.split(',')[0]
+            data[f'{low_key}_first_name_1'] = " ".join(name.split(',')[1:]).strip()
+            address = element.find_next('p').span.find_next('span')
+            data[f'{low_key}_address_1'] = unicodedata.normalize("NFKD", address.text) if address else None
     return data
 
 
@@ -97,8 +108,8 @@ def get_patent_data(soup):
     application = find_text(soup, 'Application')
     application_date = application.split(" ")[-1]
     publication = find_text(soup, 'Publication')
-    publication_number = re.sub("[\(\[].*?[\)\]]", "", publication)  # remove brackets
-    publication_date = publication.split(" ")[-1]
+    publication_number = re.sub("[\(\[].*?[\)\]]", "", publication).strip()  # remove brackets
+    publication_date = publication_number.strip().split(" ")[-1]
     data = {}
     data = find_applicants(soup, data)
     data['title'] = find_text(soup, 'Title (en)')
@@ -138,16 +149,31 @@ def main(year: int):
     sleep_time(2)
     WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.ID, 'goToResultLink'))).click()
     sleep_time(2)
-    patents = []
     doc_html = driver.page_source
     soup = BeautifulSoup(doc_html, 'html.parser')
     documentCount = soup.find('span', {'data-dojo-attach-point':"documentCount"})
     count = unicodedata.normalize("NFKD", documentCount.text)
     documentCount = int(count.replace(" ", ""))
 
+    df = pd.read_excel(f'patents_{year}.xlsx')
+    if documentCount == len(df):
+        print('No new patents')
+        driver.quit()
+        return
+
+    if len(df) != 0:
+        current_index = 1
+        while current_index <= len(df):
+            driver.find_element(By.CLASS_NAME, 'btNextDocument').click()
+            current_index = driver.find_element(By.XPATH, '//span[@data-dojo-attach-point="documentIndex"]').text
+            current_index = int(current_index.replace(" ", ""))
+        documentCount -= len(df)
+
+    patents = ast.literal_eval(df.to_json(orient='records'))
     text_before = ''
-    for _ in range(documentCount):
+    for iter in range(documentCount):
         print('text_before', text_before)
+        print('iter', f'{iter}/{documentCount}')
         WebDriverWait(driver, 10).until(
             text_to_change((By.CLASS_NAME, "titleContainer"), text_before)
         )
@@ -170,8 +196,5 @@ def main(year: int):
 
 
 if __name__ == '__main__':
-    year = 2021
+    year = 2020
     main(year)
-
-
-# https://data.epo.org/pise-server/rest/databases/EPAB2022001/documents/EP3741204A120201125?section=BIBLIOGRAPHIC_DATA&sectionType=TEXTUAL&searchId=31277645-9ebd-41fc-82f6-e371062b45a7&field=TIEN&field=TIDE&field=TIFR&field=ABEN&field=ABDE&field=ABFR&field=EP_&field=APN_DOC&field=PRN_DOC&field=PAAP&field=DIAP&field=DCS&field=DXS&field=DVS&field=IC17&field=ICF&field=CPC&field=CSET&field=APP_WORD&field=INV_WORD&field=REP_WORD&field=IPUN_DOC&field=IAPN_DOC&field=CPAP_DOC&field=CNAP_DOC&field=CPEP&field=CNEP&field=COD&field=PUA12&field=PUA3&field=PUB1&field=PUB2&field=PUB3&field=ISFAM&field=IFAM&field=CLEN&field=CLDE&field=CLFR&format=HTML&request.preventCache=1641457001517
