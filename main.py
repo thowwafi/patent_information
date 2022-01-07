@@ -156,20 +156,21 @@ def main(year: int):
     documentCount = int(count.replace(" ", ""))
 
     df = pd.read_excel(f'patents_{year}.xlsx')
-    if documentCount == len(df):
+    patents = ast.literal_eval(df.to_json(orient='records'))
+    if documentCount == len(patents):
         print('No new patents')
         driver.quit()
         return
 
-    if len(df) != 0:
+    print('len(df)', len(patents))
+    if len(patents) != 0:
         current_index = 1
-        while current_index <= len(df):
+        while current_index <= len(patents):
             driver.find_element(By.CLASS_NAME, 'btNextDocument').click()
             current_index = driver.find_element(By.XPATH, '//span[@data-dojo-attach-point="documentIndex"]').text
             current_index = int(current_index.replace(" ", ""))
-        documentCount -= len(df)
+        documentCount -= len(patents)
 
-    patents = ast.literal_eval(df.to_json(orient='records'))
     text_before = ''
     for iter in range(documentCount):
         print('text_before', text_before)
