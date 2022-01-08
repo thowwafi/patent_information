@@ -1,4 +1,3 @@
-import ast
 from bs4 import BeautifulSoup
 import pandas as pd
 import re
@@ -6,6 +5,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+import sys
 import traceback
 import unicodedata
 from utils import *
@@ -198,5 +198,8 @@ def main(year: int):
 
 
 if __name__ == '__main__':
-    year = 2019
+    if len(sys.argv) < 2:
+        print('Please specify year')
+        sys.exit()
+    year = int(sys.argv[1])
     main(year)
