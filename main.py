@@ -1,10 +1,12 @@
 from bs4 import BeautifulSoup
 import pandas as pd
 import re
+from pandas.core.accessor import DirNamesMixin
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 import sys
 import traceback
 import unicodedata
@@ -175,7 +177,7 @@ def main(year: int):
     for iter in range(documentCount):
         print('text_before', text_before)
         print('iter', f'{iter}/{documentCount}')
-        WebDriverWait(driver, 10).until(
+        WebDriverWait(driver, 20).until(
             text_to_change((By.CLASS_NAME, "titleContainer"), text_before)
         )
         document = driver.find_element(By.CLASS_NAME, 'pDocument')
@@ -202,4 +204,8 @@ if __name__ == '__main__':
         print('Please specify year')
         sys.exit()
     year = int(sys.argv[1])
-    main(year)
+    try:
+        main(year)
+    except TimeoutException as e:
+        print('e', e)
+        main(year)
