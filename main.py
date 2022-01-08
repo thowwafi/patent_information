@@ -156,21 +156,21 @@ def main(year: int):
     documentCount = int(count.replace(" ", ""))
 
     df = pd.read_excel(f'patents_{year}.xlsx')
-    patents = ast.literal_eval(df.to_json(orient='records'))
-    if documentCount == len(patents):
+    # patents = ast.literal_eval(df.to_json(orient='records'))
+    if documentCount == len(df):
         print('No new patents')
         driver.quit()
         return
 
-    print('len(df)', len(patents))
-    if len(patents) != 0:
+    print('len(df)', len(df))
+    if len(df) != 0:
         current_index = 1
-        while current_index <= len(patents):
+        while current_index <= len(df):
             driver.find_element(By.CLASS_NAME, 'btNextDocument').click()
             current_index = driver.find_element(By.XPATH, '//span[@data-dojo-attach-point="documentIndex"]').text
             current_index = int(current_index.replace(" ", ""))
-        documentCount -= len(patents)
-
+        documentCount -= len(df)
+    patents = []
     text_before = ''
     for iter in range(documentCount):
         print('text_before', text_before)
@@ -189,13 +189,14 @@ def main(year: int):
                 f.write(str(traceback.format_exc()))
             continue
         patents.append(patent)
-        df = pd.DataFrame(patents)
-        df.to_excel(f'patents_{year}.xlsx', index=False)
+        newdf = pd.DataFrame(patents)
+        df_res = pd.concat([df, newdf], ignore_index=True)
+        df_res.to_excel(f'patents_{year}.xlsx', index=False)
         text_before = driver.find_element(By.CLASS_NAME, 'titleContainer').text
         driver.find_element(By.CLASS_NAME, 'btNextDocument').click()
     driver.quit()
 
 
 if __name__ == '__main__':
-    year = 2020
+    year = 2019
     main(year)
