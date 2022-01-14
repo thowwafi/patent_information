@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup
 import pandas as pd
+from pyexcelerate import Workbook
 import re
 from pandas.core.accessor import DirNamesMixin
 from selenium.webdriver.common.action_chains import ActionChains
@@ -178,7 +179,7 @@ def main(year: int):
     for iter in range(documentCount):
         print('text_before', text_before)
         print('iter', f'{iter}/{documentCount}')
-        WebDriverWait(driver, 20).until(
+        WebDriverWait(driver, 2).until(
             text_to_change((By.CLASS_NAME, "titleContainer"), text_before)
         )
         document = driver.find_element(By.CLASS_NAME, 'pDocument')
@@ -194,7 +195,11 @@ def main(year: int):
         patents.append(patent)
         newdf = pd.DataFrame(patents)
         df_res = pd.concat([df, newdf], ignore_index=True)
-        df_res.to_excel(f'patents_{year}.xlsx', index=False)
+        values = [df_res.columns] + list(df_res.values)
+        wb = Workbook()
+        wb.new_sheet('Sheet1', data=values)
+        wb.save(f'patents_{year}.xlsx')
+        # df_res.to_excel(f'patents_{year}.xlsx', index=False)
         text_before = driver.find_element(By.CLASS_NAME, 'titleContainer').text
         driver.find_element(By.CLASS_NAME, 'btNextDocument').click()
     driver.quit()
