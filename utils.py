@@ -21,7 +21,7 @@ def set_up_selenium(browser='chrome'):
     options = ChromeOptions() if browser == 'chrome' else FOptions()
     options.add_argument("--window-size=1920,1080")
     options.add_argument("--start-maximized")
-    # options.add_argument("--headless")
+    options.add_argument("--headless")
     home = os.getcwd()
     system = platform.system().lower()
     if browser == 'chrome':
