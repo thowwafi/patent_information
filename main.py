@@ -168,6 +168,7 @@ def main(year: int):
     if len(df) != 0:
         current_index = 1
         while current_index <= len(df):
+            print(f'{current_index}/{len(df)}', end='\r')
             driver.find_element(By.CLASS_NAME, 'btNextDocument').click()
             current_index = driver.find_element(By.XPATH, '//span[@data-dojo-attach-point="documentIndex"]').text
             current_index = int(current_index.replace(" ", ""))
