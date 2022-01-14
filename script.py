@@ -1,53 +1,78 @@
 from bs4 import BeautifulSoup
+from datetime import timedelta
+from main import get_patent_data
+import pandas as pd
 import requests
+import sys
+import time
+from timeit import default_timer as timer
 
 
-AUTH_URL = "https://data.epo.org/pise-server/rest/authentication?request.preventCache=1641083513865"
-SEACRH_URL = "https://data.epo.org/pise-server/rest/searches?request.preventCache=1641084355766"
+AUTH_URL = "https://data.epo.org/pise-server/rest/authentication"
+SEACRH_URL = "https://data.epo.org/pise-server/rest/searches"
+DATABASE_ID = 'EPAB2022002'
 
-def main():
+def main(year):
+    headers = {'Accept': 'application/json'}
     payload = {'login': 'guest', 'password': 'guest'}
     session = requests.Session()
-    resp = session.post(AUTH_URL, data=payload)
-    xmlstring = resp.text
-
-    soup = BeautifulSoup(xmlstring, 'lxml')
-    token = soup.find('token').text
+    resp = session.post(AUTH_URL, data=payload, headers=headers)
+    token = resp.json().get('token')
 
     payload2 = {
-        'databaseId': 'EPAB2021052',
-        'q': 'APPCO%20%3D%20NL%20AND%20APD%20%3E%3D%202000',
+        'databaseId': DATABASE_ID,
+        'q': f'APPCO = NL AND APD > {year} AND APD < {year + 1}',
         'synchronous': 'false',
         'estimate': 'false',
         'termConnector': 'OR',
         'criteriaConnector': 'OR',
     }
-    resp2 = session.post(SEACRH_URL, data=payload2, headers={'Authentication-Token': token})
-    xmlstring = resp2.text
-    soup = BeautifulSoup(xmlstring, 'lxml')
-    status_id = soup.find('resourceuuid').text
+    headers['Authentication-Token'] = token
+    resp2 = session.post(SEACRH_URL, data=payload2, headers=headers)
+    status_id = resp2.json().get('id')
+    print('resp2', resp2)
     print('status', status_id)
 
-    results_url = f"https://data.epo.org/pise-server/rest/searches/{status_id}/results?position=0&size=30&field=HIT_LIST&synchronous=false&request.preventCache=1641108532638"
-    # result_url = f"https://data.epo.org/pise-server/rest/statuses/{status_id}?request.preventCache=1641089355766"
-    print('token', token)
-    print(results_url)
-    resp3 = session.get(results_url, headers={
-        'Authentication-Token': token, 
-        'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36'
-    })
-    print(resp3)
+    result_url = f"https://data.epo.org/pise-server/rest/searches/{status_id}/results?position=0&size=10000&field=HIT_LIST&synchronous=false&request.preventCache=1642141615116"
+    resp4 = session.get(result_url, headers=headers)
+    print('resp4', resp4.status_code)
+    while resp4.status_code == 404:
+        time.sleep(1)
+        resp4 = session.get(result_url, headers=headers)
+        print('resp4', resp4.status_code)
 
-    url = "https://data.epo.org/pise-server/rest/statuses/033f1d4a-2157-4c13-907f-a8b40a40403d%2C?request.preventCache=1641108533708"
-    resp4 = session.get(url, headers={
-        'Authentication-Token': token, 
-        'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36'
-    })
-    print(resp4)
-    import pdb; pdb.set_trace()
-    xmlstring = resp2.text
-    soup = BeautifulSoup(xmlstring, 'lxml')
+    result_id = resp4.json().get('id')
 
+    final_url = f"https://data.epo.org/pise-server/rest/statuses/{result_id}"
+    final_res = session.get(final_url, headers=headers)
+    print('final_res', final_res.json().get('state'))
+    while final_res.json().get('state') == 'RUNNING':
+        time.sleep(1)
+        final_res = session.get(final_url, headers=headers)
+        print('final_res', final_res.json().get('state'))
+
+    headers.pop('Accept')
+    row_data = final_res.json().get('resource').get('results').get('rowData')
+    print("total", len(row_data))
+    patents = []
+    for index, row in enumerate(row_data):
+        print('iter', f'{index}/{len(row_data)}')
+        key = row.get('key')
+        patent_url = f"https://data.epo.org/pise-server/rest/databases/{DATABASE_ID}/documents/{key}?section=BIBLIOGRAPHIC_DATA"
+        patent_res = session.get(patent_url, headers=headers)
+        soup = BeautifulSoup(patent_res.text, 'html.parser')
+        patent = get_patent_data(soup)
+        patents.append(patent)
+    newdf = pd.DataFrame(patents)
+    newdf.to_excel(f'patents_{year}.xlsx', index=False)
 
 if __name__ == '__main__':
-    main()
+    if len(sys.argv) < 2:
+        print('Please specify year')
+        sys.exit()
+    year = int(sys.argv[1])
+    start = timer()
+    main(year)
+    end = timer()
+    print(timedelta(seconds=end-start))
+    print('done')
