@@ -1,3 +1,5 @@
+#!/venv/bin/python
+
 from bs4 import BeautifulSoup
 from datetime import timedelta
 from main import get_patent_data
@@ -71,8 +73,10 @@ if __name__ == '__main__':
         print('Please specify year')
         sys.exit()
     year = int(sys.argv[1])
-    start = timer()
-    main(year)
-    end = timer()
-    print(timedelta(seconds=end-start))
+    years = list(range(2000, 2006))
+    for year in years:
+        start = timer()
+        main(year)
+        end = timer()
+        print(timedelta(seconds=end-start))
     print('done')
