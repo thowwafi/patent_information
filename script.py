@@ -66,7 +66,7 @@ def main(year):
         patent = get_patent_data(soup)
         patents.append(patent)
     newdf = pd.DataFrame(patents)
-    newdf.to_excel(f'patents_{year}.xlsx', index=False)
+    newdf.to_excel(f'output/patents_{year}.xlsx', index=False)
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
