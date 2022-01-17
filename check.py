@@ -15,6 +15,7 @@ DATABASE_ID = 'EPAB2022002'
 
 
 def check():
+    years = []
     for year in range(2000, 2022):
         print(f'{year}')
         headers = {'Accept': 'application/json'}
@@ -60,7 +61,12 @@ def check():
 
         print(len(df) == len(row_data))
 
+        if len(df) != len(row_data):
+            years.append(year)
+
         print("----------------")
+
+    print(years)
     return
 
 if __name__ == '__main__':
