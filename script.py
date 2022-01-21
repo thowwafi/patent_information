@@ -58,6 +58,7 @@ def main(year):
     print("total", len(row_data))
     patents = []
     for index, row in enumerate(row_data):
+        print('year', year)
         print('iter', f'{index}/{len(row_data)}')
         key = row.get('key')
         patent_url = f"https://data.epo.org/pise-server/rest/databases/{DATABASE_ID}/documents/{key}?section=BIBLIOGRAPHIC_DATA"
