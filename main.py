@@ -12,6 +12,12 @@ import sys
 import traceback
 import unicodedata
 from utils import *
+import logging
+
+
+logger = logging.getLogger()
+handler = logging.FileHandler('logfile.log')
+logger.addHandler(handler)
 
 
 BASE_URL = "https://data.epo.org/expert-services/index.html"
@@ -29,20 +35,6 @@ def find_text(soup, text):
         with open('log.txt', 'a') as f:
             f.write(str(traceback.format_exc()))
     return unicodedata.normalize("NFKD", text_string)
-
-
-def find_ipc_numbers(soup, text, index):
-    element = soup.find('divtitle', class_='coGrey skiptranslate', text=text)
-    if not element:
-        element = soup.find('divtitle', class_='coGrey skiptranslate', text=re.compile(text))
-    numbers = element.find_next('p').find_all('span', class_='text-nowrap')
-    if index < len(numbers) or index == len(numbers):
-        loop = index - 1
-        print('----')
-        print(index)
-        print(loop)
-        print(len(numbers))
-        return unicodedata.normalize("NFKD", numbers[loop].text)
 
 
 def find_inventors(soup, data):
@@ -107,6 +99,19 @@ def find_applicants(soup, data):
     return data
 
 
+def find_ipc_numbers(soup, data):
+    key = 'IPC'
+    element = soup.find('divtitle', class_='coGrey skiptranslate', text=re.compile(key))
+    low_key = key.lower()
+    numbers = element.find_next('p').find_all('a', class_='text-nowrap')
+    if not numbers:
+        logger.error('IPC numbers not found')
+        logger.error(str(data))
+    for i, number in enumerate(numbers, start=1):
+        data[f'{low_key}_number_{i}'] = unicodedata.normalize("NFKD", number.text)
+    return data
+
+
 def get_patent_data(soup):
     application = find_text(soup, 'Application')
     application_date = application.split(" ")[-1]
@@ -121,9 +126,7 @@ def get_patent_data(soup):
     data['publication_date'] = publication_date
     data['application_number'] = application
     data['application_date'] = application_date
-    data['ipc_number_1'] = find_ipc_numbers(soup, 'IPC', 1)
-    data['ipc_number_2'] = find_ipc_numbers(soup, 'IPC', 2)
-    data['ipc_number_3'] = find_ipc_numbers(soup, 'IPC', 3)
+    data = find_ipc_numbers(soup, data)
     data = find_inventors(soup, data)
     print('data', data)
     return data

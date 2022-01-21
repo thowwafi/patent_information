@@ -12,7 +12,7 @@ from timeit import default_timer as timer
 
 AUTH_URL = "https://data.epo.org/pise-server/rest/authentication"
 SEACRH_URL = "https://data.epo.org/pise-server/rest/searches"
-DATABASE_ID = 'EPAB2022002'
+DATABASE_ID = 'EPAB2022003'
 
 def main(year):
     headers = {'Accept': 'application/json'}
