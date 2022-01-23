@@ -2,7 +2,7 @@
 
 from bs4 import BeautifulSoup
 from datetime import timedelta
-from main import get_patent_data
+from main import get_patent_data, get_patent_datas
 import pandas as pd
 import requests
 import sys
@@ -58,16 +58,17 @@ def main(year):
     print("total", len(row_data))
     patents = []
     for index, row in enumerate(row_data):
-        print('year', year)
-        print('iter', f'{index}/{len(row_data)}')
+        print('iter', year, f'{index}/{len(row_data)}', end='\r')
         key = row.get('key')
         patent_url = f"https://data.epo.org/pise-server/rest/databases/{DATABASE_ID}/documents/{key}?section=BIBLIOGRAPHIC_DATA"
         patent_res = session.get(patent_url, headers=headers)
-        soup = BeautifulSoup(patent_res.text, 'html.parser')
-        patent = get_patent_data(soup)
-        patents.append(patent)
+        soup = BeautifulSoup(patent_res.content, 'html.parser')
+        patents_data = get_patent_datas(soup)
+        for patent in patents_data:
+            patents.append(patent)
+
     newdf = pd.DataFrame(patents)
-    newdf.to_excel(f'output/patents_{year}.xlsx', index=False)
+    newdf.to_excel(f'new_output/patents_{year}.xlsx', index=False)
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:

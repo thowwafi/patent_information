@@ -112,20 +112,85 @@ def find_ipc_numbers(soup, data):
     return data
 
 
+def find_ipc_numbers_list(soup):
+    key = 'IPC'
+    element = soup.find('divtitle', class_='coGrey skiptranslate', text=re.compile(key))
+    numbers = element.find_next('p').find_all('a', class_='text-nowrap')
+    return [unicodedata.normalize("NFKD", number.text) for number in numbers]
+
+
+def find_applicants_list(soup):
+    key = 'Applicant'
+    element = soup.find('divtitle', class_='coGrey skiptranslate', text=re.compile(key))
+    ul = element.find_next_sibling('ul')
+    datas = []
+    if ul:
+        for li in ul.find_all('li'):
+            datas.append(
+                {
+                    'name': li.p.find(text=True),
+                    'address': unicodedata.normalize("NFKD", li.span.text)
+                }
+            )
+    else:
+        address = element.find_next('p').span.find_next('span')
+        datas.append(
+            {
+                'name': element.find_next('p').span.text,
+                'address': unicodedata.normalize("NFKD", address.text)
+            }
+        )
+    return datas
+
+
+def get_patent_datas(soup):
+    datas = []
+    ipc_numbers = find_ipc_numbers_list(soup)
+    applicants = find_applicants_list(soup)
+    application = find_text(soup, 'Application')
+    app_type, app_number, app_date = application.split(' ')
+    
+    publication = find_text(soup, 'Publication')
+    publication_number = re.sub("[\(\[].*?[\)\]]", "", publication).strip()  # remove brackets
+    publication_date = publication_number.strip().split(" ")[-1]
+
+    title = find_text(soup, 'Title (en)')
+    abstract = find_text(soup, 'Abstract')
+
+    inventors = find_inventors(soup, {})
+    for applicant in applicants:
+        for ipc in ipc_numbers:
+            data = {
+                'applicant_name': applicant.get('name'),
+                'applicant_address': applicant.get('address'),
+                'application_type': app_type,
+                'application_number': app_number,
+                'application_date': app_date,
+                'publication_number': publication_number,
+                'publication_date': publication_date,
+                'ipc_number': ipc,
+                'title': title,
+                'abstract': abstract,
+            }
+            data.update(inventors)
+            datas.append(data)
+    return datas
+
+
 def get_patent_data(soup):
     application = find_text(soup, 'Application')
     application_date = application.split(" ")[-1]
     publication = find_text(soup, 'Publication')
     publication_number = re.sub("[\(\[].*?[\)\]]", "", publication).strip()  # remove brackets
     publication_date = publication_number.strip().split(" ")[-1]
+    title = find_text(soup, 'Title (en)')
+    abstract = find_text(soup, 'Abstract')
+    publication_number = publication_number
+    publication_date = publication_date
+    application_number = application
+    application_date = application_date
     data = {}
     data = find_applicants(soup, data)
-    data['title'] = find_text(soup, 'Title (en)')
-    data['abstract'] = find_text(soup, 'Abstract')
-    data['publication_number'] = publication_number
-    data['publication_date'] = publication_date
-    data['application_number'] = application
-    data['application_date'] = application_date
     data = find_ipc_numbers(soup, data)
     data = find_inventors(soup, data)
     print('data', data)
