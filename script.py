@@ -75,7 +75,7 @@ if __name__ == '__main__':
         print('Please specify year')
         sys.exit()
     # year = int(sys.argv[1])
-    years = list(range(2010, 2022))
+    years = list(range(2011, 2022))
     for year in years:
         start = timer()
         main(year)
