@@ -4,7 +4,7 @@ import pandas as pd
 
 
 home = os.getcwd()
-OUTPUT_PATH = os.path.join(home, 'output')
+OUTPUT_PATH = os.path.join(home, 'new_output')
 
 if __name__ == '__main__':
     appended_data = []
@@ -16,4 +16,4 @@ if __name__ == '__main__':
         appended_data.append(data)
 
     appended_data = pd.concat(appended_data)
-    appended_data.to_excel('patents_2000_2021.xlsx', index=False)
+    appended_data.to_excel('patents_2000_2021_new.xlsx', index=False)
