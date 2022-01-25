@@ -12,8 +12,11 @@ if __name__ == '__main__':
     files = sorted(files)
     for infile in files:
         print(infile)
-        data = pd.read_excel(infile)
+        data = pd.read_excel(infile, dtype=str)
         appended_data.append(data)
 
     appended_data = pd.concat(appended_data)
+    appended_data['country_code'] = appended_data.applicant_address.str.split(' ').str[-1].str.strip()
+    column_to_move = appended_data.pop("country_code")  
+    appended_data.insert(2, "country_code", column_to_move)
     appended_data.to_excel('patents_2000_2021_new.xlsx', index=False)
