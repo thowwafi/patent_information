@@ -23,3 +23,8 @@
 ```
     python script.py 2015
 ```
+
+
+```
+nohup python -u script.py 2015 > output.log &
+```
