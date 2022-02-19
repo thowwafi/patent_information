@@ -168,6 +168,7 @@ def get_patent_datas(soup):
                 'application_date': app_date,
                 'publication_number': publication_number,
                 'publication_date': publication_date,
+                'ipc_main': ipc_numbers[0],
                 'ipc_number': ipc,
                 'title': title,
                 'abstract': abstract,

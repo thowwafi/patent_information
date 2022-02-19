@@ -12,7 +12,7 @@ from timeit import default_timer as timer
 
 AUTH_URL = "https://data.epo.org/pise-server/rest/authentication"
 SEACRH_URL = "https://data.epo.org/pise-server/rest/searches"
-DATABASE_ID = 'EPAB2022003'
+DATABASE_ID = 'EPAB2022007'
 
 def main(year):
     headers = {'Accept': 'application/json'}
@@ -75,8 +75,8 @@ if __name__ == '__main__':
         print('Please specify year')
         sys.exit()
     # year = int(sys.argv[1])
-    # years = list(range(2011, 2022))
-    years = [2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021]
+    years = list(range(1980, 2000))
+    # years = [2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021]
     for year in years:
         start = timer()
         main(year)
