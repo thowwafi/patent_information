@@ -117,6 +117,9 @@ def find_ipc_numbers(soup, data):
 def find_ipc_numbers_list(soup):
     key = 'IPC'
     element = soup.find('divtitle', class_='coGrey skiptranslate', text=re.compile(key))
+    if not element:
+        print('IPC numbers not found')
+        return []
     numbers = element.find_next('p').find_all('a', class_='text-nowrap')
     return [unicodedata.normalize("NFKD", number.text) for number in numbers]
 
