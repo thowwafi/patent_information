@@ -39,8 +39,10 @@ def find_text(soup, text):
 
 def find_inventors(soup, data):
     key = 'Inventor'
-    element = soup.find('divtitle', class_='coGrey skiptranslate', text=re.compile(key))
     low_key = key.lower()
+    element = soup.find('divtitle', class_='coGrey skiptranslate', text=re.compile(key))
+    if not element:
+        return data
     ul = element.find_next_sibling('ul')
     if ul:
         for i in range(1, 11):    
