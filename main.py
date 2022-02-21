@@ -155,6 +155,7 @@ def get_patent_datas(soup):
     publication = find_text(soup, 'Publication')
     publication_number = re.sub("[\(\[].*?[\)\]]", "", publication).strip()  # remove brackets
     publication_date = publication_number.strip().split(" ")[-1]
+    print('publication_number', publication_number)
 
     title = find_text(soup, 'Title (en)')
     abstract = find_text(soup, 'Abstract')
