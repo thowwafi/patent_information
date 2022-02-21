@@ -1,5 +1,6 @@
 #!/venv/bin/python
 
+import pdb
 from bs4 import BeautifulSoup
 from datetime import timedelta
 from main import get_patent_data, get_patent_datas
@@ -74,8 +75,9 @@ if __name__ == '__main__':
     if len(sys.argv) < 2:
         print('Please specify year')
         sys.exit()
-    # year = int(sys.argv[1])
-    years = list(range(1980, 2000))
+    year_from = int(sys.argv[1])
+    year_to = int(sys.argv[2])
+    years = list(range(year_from, year_to))
     # years = [2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021]
     for year in years:
         start = timer()
