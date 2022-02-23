@@ -7,7 +7,7 @@ def convert_to_csv(input_path, output_path):
     """
     df = pd.read_excel(input_path, dtype=str)
     print(df.shape)
-    df.to_csv(output_path, index=False, sep=";")
+    df.to_csv(output_path, index=False, sep=";", encoding="utf-8-sig")
 
 
 if __name__ == '__main__':
