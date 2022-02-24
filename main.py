@@ -165,10 +165,13 @@ def get_patent_datas(soup):
 
     inventors = find_inventors(soup, {})
     for applicant in applicants:
+        address = applicant['address']
+        country_code = address.split(' ')[-1].strip()
         for ipc in ipc_numbers:
             data = {
                 'applicant_name': applicant.get('name'),
-                'applicant_address': applicant.get('address'),
+                'applicant_address': address,
+                'country_code': country_code,
                 'application_type': app_type,
                 'application_number': app_number,
                 'application_date': app_date,
