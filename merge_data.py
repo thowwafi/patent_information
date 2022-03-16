@@ -1,3 +1,4 @@
+import csv
 import glob
 import os
 import pdb
@@ -11,7 +12,7 @@ if __name__ == '__main__':
     appended_data = []
     files = glob.glob(f"{OUTPUT_PATH}/*.xlsx")
     files = sorted(files)
-    for infile in files[:20]:
+    for infile in files[20:]:
         print(infile)
         data = pd.read_excel(infile, dtype=str)
         appended_data.append(data)
