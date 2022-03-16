@@ -1,12 +1,12 @@
-from pprint import pprint
-import traceback
 from bs4 import BeautifulSoup as bs4
+from datetime import timedelta
 from fuzzywuzzy import process
 from log_settings import logger
 import numpy as np
 import os
 import pandas as pd
 import re
+from timeit import default_timer as timer
 import urllib
 from urllib.request import urlopen
 
@@ -106,34 +106,38 @@ def get_coc(name, address, coc):
     return kvk_number
 
 
-def run():
+def run(year_path):
     columns = ['applicant_name', 'applicant_address', 'COC']
-    for year in sorted(os.listdir(outputs), reverse=True):
-        if '2020' in year:
-            path = os.path.join(outputs, year)
-            df = pd.read_excel(path, dtype=str)
-            if 'COC' not in df.columns:
-                df['COC'] = None
-            df_unique = df.drop_duplicates(subset=['applicant_name', 'applicant_address'])[columns]
-            count = 0
-            for index, row in df_unique.iterrows():
-                print(year, f"{count}/{len(df_unique)}")
-                if not row['applicant_address'].endswith('NL'):
-                    continue
-                coc_number = get_coc(row['applicant_name'], row['applicant_address'], row['COC'])
-                if pd.isna(coc_number) or not coc_number:
-                    print(row['applicant_name'], row['applicant_address'])
-                    # coc_number = input("Enter KVK number: \t\n")
-                df_unique.at[index, 'COC'] = coc_number
-                query = (df['applicant_name'] == row['applicant_name']) & (df['applicant_address'] == row['applicant_address'])
-                df.loc[query, 'COC'] = coc_number
-                count += 1
-                # if count % 5 == 0 and count > 0:
-            df.to_excel(path, index=False)
+    path = os.path.join(outputs, year_path)
+    df = pd.read_excel(path, dtype=str)
+    if 'COC' not in df.columns:
+        df['COC'] = None
+    df_unique = df.drop_duplicates(subset=['applicant_name', 'applicant_address'])[columns]
+    count = 0
+    for index, row in df_unique.iterrows():
+        print(year_path, f"{count}/{len(df_unique)}")
+        if not row['applicant_address'].endswith('NL'):
+            continue
+        coc_number = get_coc(row['applicant_name'], row['applicant_address'], row['COC'])
+        if pd.isna(coc_number) or not coc_number:
+            print(row['applicant_name'], row['applicant_address'])
+            # coc_number = input("Enter KVK number: \t\n")
+        df_unique.at[index, 'COC'] = coc_number
+        query = (df['applicant_name'] == row['applicant_name']) & (df['applicant_address'] == row['applicant_address'])
+        df.loc[query, 'COC'] = coc_number
+        count += 1
+    df.to_excel(path, index=False)
     return
 
 
 if __name__ == '__main__':
-    run()
+    extensionsToCheck = ["2021", "2020"]
+    for year_path in sorted(os.listdir(outputs), reverse=True):
+        if any(ext in year_path for ext in extensionsToCheck):
+            start = timer()
+            run(year_path)
+            end = timer()
+            print(timedelta(seconds=end-start))
+            logger.info(f"{year_path} -- done -- {timedelta(seconds=end-start)}")
     print('done')
     logger.info('done')
