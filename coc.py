@@ -131,7 +131,7 @@ def run(year_path):
 
 
 if __name__ == '__main__':
-    extensionsToCheck = ["2019", "2018", "2017", "2016", "2015"]
+    extensionsToCheck = [str(i) for i in list(range(1980, 2015))]
     for year_path in sorted(os.listdir(outputs), reverse=True):
         if any(ext in year_path for ext in extensionsToCheck):
             start = timer()
