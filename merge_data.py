@@ -6,7 +6,7 @@ import pandas as pd
 
 
 home = os.getcwd()
-OUTPUT_PATH = os.path.join(home, 'new_output')
+OUTPUT_PATH = os.path.join(home, 'output_excel')
 MERGED_PATH = 'patents_2010_2021'
 
 if __name__ == '__main__':
@@ -16,7 +16,7 @@ if __name__ == '__main__':
     for infile in files[30:]:
         print(infile)
         data = pd.read_excel(infile, dtype=str)
-        infile_csv = infile.replace('.xlsx', '.csv').replace('new_output', 'output_csv')
+        infile_csv = infile.replace('.xlsx', '.csv').replace('output_excel', 'output_csv')
         data.to_csv(infile_csv, index=False, sep=";", encoding="utf-8-sig")
         appended_data.append(data)
 

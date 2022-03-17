@@ -69,7 +69,7 @@ def main(year):
             patents.append(patent)
 
     newdf = pd.DataFrame(patents)
-    newdf.to_excel(f'new_output/patents_{year}.xlsx', index=False)
+    newdf.to_excel(f'output_excel/patents_{year}.xlsx', index=False)
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:

@@ -12,7 +12,7 @@ from urllib.request import urlopen
 
 
 home = os.getcwd()
-outputs = os.path.join(home, 'new_output')
+outputs = os.path.join(home, 'output_excel')
 
 params = {
     "handelsnaam": "",
