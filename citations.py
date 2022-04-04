@@ -98,7 +98,16 @@ def get_citations(year_path):
             citedBy_s = get_data_tables(soup, number, 'citedBy')
             data_cited_by.extend(iter(citedBy_s))
 
-        if soup.find('h3', id='nplCitations'):
+        if not soup.find('h3', id='nplCitations'):
+            citation = {
+                "publication_number": number,
+                "patent_citation": 0,
+                "publication_date": 0,
+                "assignee": 0,
+                "title": 0
+            }
+            non_patent_citations.append(citation)
+        else:
             h3_pc = soup.find('h3', id='nplCitations')
             pc_table = h3_pc.find_next('div', class_='responsive-table')
             for tr in pc_table.find_all('div', class_='tr')[1:]:
@@ -109,7 +118,7 @@ def get_citations(year_path):
                     "assignee": 0,
                     "title": tr.text.replace('*', '').strip()
                 }
-                non_patent_citations.append(citation)                
+                non_patent_citations.append(citation)
 
     output_name = year_path.replace(".xlsx", "")
     output_file = os.path.join(output_citations, f"{output_name}_citations.xlsx")
