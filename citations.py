@@ -119,6 +119,7 @@ def get_citations(year_path):
                     "title": tr.text.replace('*', '').strip()
                 }
                 non_patent_citations.append(citation)
+        sleep_time(2)
 
     output_name = year_path.replace(".xlsx", "")
     output_file = os.path.join(output_citations, f"{output_name}_citations.xlsx")
