@@ -53,12 +53,12 @@ def get_citations(year_path):
     driver = set_up_selenium(browser='firefox')
 
     patentCitations = []
+    non_patent_citations = []
     data_cited_by = []
+
     for index, number in enumerate(publication_numbers):
         print(f"{index}/{len(publication_numbers)}")
         print('number', number)
-        if index > 10:
-            continue    # only get the first 10
         url = f"https://patents.google.com/patent/{number}/en?oq={number}"
         driver.get(url)
         try:
@@ -98,11 +98,25 @@ def get_citations(year_path):
             citedBy_s = get_data_tables(soup, number, 'citedBy')
             data_cited_by.extend(iter(citedBy_s))
 
+        if soup.find('h3', id='nplCitations'):
+            h3_pc = soup.find('h3', id='nplCitations')
+            pc_table = h3_pc.find_next('div', class_='responsive-table')
+            for tr in pc_table.find_all('div', class_='tr')[1:]:
+                citation = {
+                    "publication_number": number,
+                    "patent_citation": 0,
+                    "publication_date": 0,
+                    "assignee": 0,
+                    "title": tr.text.replace('*', '').strip()
+                }
+                non_patent_citations.append(citation)                
+
     output_name = year_path.replace(".xlsx", "")
     output_file = os.path.join(output_citations, f"{output_name}_citations.xlsx")
 
     writer = pd.ExcelWriter(output_file, engine='openpyxl')
     pd.DataFrame(patentCitations).to_excel(writer, sheet_name='PatentCitations', index=False)
+    pd.DataFrame(non_patent_citations).to_excel(writer, sheet_name='NonPatentCitations', index=False)
     pd.DataFrame(data_cited_by).to_excel(writer, sheet_name='CitedBy', index=False)
     writer.save()
     writer.close()
@@ -111,7 +125,7 @@ def get_citations(year_path):
 
 
 if __name__ == '__main__':
-    extensionsToCheck = [str(i) for i in list(range(2021, 2022))]
+    extensionsToCheck = [str(i) for i in list(range(1980, 1981))]
     for year_path in sorted(os.listdir(outputs), reverse=True):
         if any(ext in year_path for ext in extensionsToCheck):
             print(year_path)
