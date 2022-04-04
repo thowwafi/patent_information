@@ -50,7 +50,7 @@ def get_citations(year_path):
     df = pd.read_excel(path, dtype=str)
     publication_numbers = df.publication_number.str.split(' ').str[:3].str.join('')
     publication_numbers = publication_numbers.drop_duplicates()
-    driver = set_up_selenium()
+    driver = set_up_selenium(browser='firefox')
 
     patentCitations = []
     non_patent_citations = []
