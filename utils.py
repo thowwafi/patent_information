@@ -1,5 +1,6 @@
 import os
 import platform
+import requests
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options as ChromeOptions
@@ -8,6 +9,7 @@ from selenium.common.exceptions import SessionNotCreatedException
 from selenium.webdriver.support.ui import Select
 import time
 import wget
+from xml.etree import ElementTree
 import zipfile
 
 
@@ -32,7 +34,17 @@ def set_up_selenium(browser='chrome'):
             message = str(e)
             print(message)
             version_number = message.split('version is ')[1][:12]
-            download_url = "https://chromedriver.storage.googleapis.com/" + version_number +"/chromedriver_linux64.zip"
+            version_num = version_number.split('.')[0]
+            url = 'https://chromedriver.storage.googleapis.com/'
+            response = requests.get(url, stream=True)
+            response.raw.decode_content = True
+            events = ElementTree.iterparse(response.raw)
+            for _, elem in events:
+                if elem.tag == "{http://doc.s3.amazonaws.com/2006-03-01}Key" and elem.text.startswith(version_num) and 'linux' in elem.text:
+                    print('found the right version')
+                    version_number = elem.text
+                    break
+            download_url = "https://chromedriver.storage.googleapis.com/" + version_number
             print(download_url)
             latest_driver_zip = wget.download(download_url, 'chromedriver.zip')
             print(latest_driver_zip)
