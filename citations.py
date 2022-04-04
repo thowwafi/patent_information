@@ -53,7 +53,7 @@ def get_citations(year_path):
     driver = set_up_selenium(browser='firefox')
 
     patentCitations = []
-    cited_bys = []
+    data_cited_by = []
     for index, number in enumerate(publication_numbers):
         print(f"{index}/{len(publication_numbers)}")
         print('number', number)
@@ -72,11 +72,7 @@ def get_citations(year_path):
         html = driver.page_source
         soup = BeautifulSoup(html, 'html.parser')
 
-        try:
-            WebDriverWait(driver, 5).until(
-                EC.visibility_of_element_located((By.ID, "patentCitations"))
-            )
-        except TimeoutException:
+        if not soup.find('h3', id='patentCitations'):
             citation = {
                 "publication_number": number,
                 "patent_citation": 0,
@@ -85,12 +81,11 @@ def get_citations(year_path):
                 "title": 0
             }
             patentCitations.append(citation)
+        else:
+            citations = get_data_tables(soup, number, 'patentCitations')
+            patentCitations.extend(iter(citations))
 
-        try:
-            WebDriverWait(driver, 5).until(
-                EC.visibility_of_element_located((By.ID, "citedBy"))
-            )
-        except TimeoutException:
+        if not soup.find('h3', id='citedBy'):
             citation = {
                 "publication_number": number,
                 "patent_citation": 0,
@@ -98,23 +93,17 @@ def get_citations(year_path):
                 "assignee": 0,
                 "title": 0
             }
-            cited_bys.append(citation)
-            continue
+            data_cited_by.append(citation)
+        else:
+            citedBy_s = get_data_tables(soup, number, 'citedBy')
+            data_cited_by.extend(iter(citedBy_s))
 
-        citations = get_data_tables(soup, number, 'patentCitations')
-        patentCitations.extend(iter(citations))
-        citedBy_s = get_data_tables(soup, number, 'citedBy')
-        cited_bys.extend(iter(citedBy_s))
     output_name = year_path.replace(".xlsx", "")
     output_file = os.path.join(output_citations, f"{output_name}_citations.xlsx")
-    pd.DataFrame(patentCitations).to_excel(output_file, sheet_name="PatentCitations", index=False)
-    writer = pd.ExcelWriter(output_file, engine='openpyxl')
 
-    if os.path.exists(output_file):
-        book = openpyxl.load_workbook(output_file)
-        writer.book = book
-    df_citedby = pd.DataFrame(cited_bys)
-    df_citedby.to_excel(writer, sheet_name='CitedBy')
+    writer = pd.ExcelWriter(output_file, engine='openpyxl')
+    pd.DataFrame(patentCitations).to_excel(writer, sheet_name='PatentCitations', index=False)
+    pd.DataFrame(data_cited_by).to_excel(writer, sheet_name='CitedBy', index=False)
     writer.save()
     writer.close()
 
