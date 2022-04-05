@@ -57,7 +57,7 @@ def get_citations(year_path):
     data_cited_by = []
 
     for index, number in enumerate(publication_numbers):
-        print(f"{index}/{len(publication_numbers)}")
+        print(f"{index}/{len(publication_numbers)}", year_path)
         print('number', number)
         url = f"https://patents.google.com/patent/{number}/en?oq={number}"
         driver.get(url)
@@ -119,7 +119,7 @@ def get_citations(year_path):
                     "title": tr.text.replace('*', '').strip()
                 }
                 non_patent_citations.append(citation)
-        time.sleep(0.5)
+        sleep_time(1)
 
     output_name = year_path.replace(".xlsx", "")
     output_file = os.path.join(output_citations, f"{output_name}_citations.xlsx")
