@@ -135,7 +135,12 @@ def get_citations(year_path):
 
 
 if __name__ == '__main__':
-    extensionsToCheck = [str(i) for i in list(range(1980, 2022))]
+    if len(sys.argv) < 3:
+        print('Please specify year from and year to')
+        sys.exit()
+    from_year = int(sys.argv[1])
+    to_year = int(sys.argv[2])
+    extensionsToCheck = [str(i) for i in list(range(from_year, to_year))]
     for year_path in sorted(os.listdir(outputs), reverse=True):
         if any(ext in year_path for ext in extensionsToCheck):
             print(year_path)
