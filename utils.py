@@ -26,6 +26,7 @@ def set_up_selenium(browser='chrome'):
     options.add_argument("--headless")
     home = os.getcwd()
     system = platform.system().lower()
+    # system = 'mac'
     if browser == 'chrome':
         driver_path = os.path.join(home, 'webdriver', system, 'chromedriver')
         try:
@@ -48,7 +49,7 @@ def set_up_selenium(browser='chrome'):
             print(download_url)
             latest_driver_zip = wget.download(download_url, 'chromedriver.zip')
             print(latest_driver_zip)
-            path = os.path.join(home, 'webdriver', 'mac')
+            path = os.path.join(home, 'webdriver', system)
             with zipfile.ZipFile(latest_driver_zip, 'r') as zip_ref:
                 zip_ref.extractall(path)
             os.remove(latest_driver_zip)
