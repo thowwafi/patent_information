@@ -56,11 +56,17 @@ def get_citations(year_path):
     non_patent_citations = []
     data_cited_by = []
 
+    timeouts_data = []
     for index, number in enumerate(publication_numbers):
         print(f"{index}/{len(publication_numbers)}", year_path)
         print('number', number)
         url = f"https://patents.google.com/patent/{number}/en?oq={number}"
-        driver.get(url)
+        try:
+            driver.get(url)
+        except TimeoutException:
+            print('timeout')
+            timeouts_data.append(number)
+            continue
         try:
             WebDriverWait(driver, 5).until(
                 EC.visibility_of_element_located((By.CLASS_NAME, "footer"))
@@ -120,6 +126,77 @@ def get_citations(year_path):
                 }
                 non_patent_citations.append(citation)
         sleep_time(1)
+
+    if timeouts_data:
+        for index, number in enumerate(timeouts_data):
+            print(f"{index}/{len(publication_numbers)}", year_path)
+            print('number', number)
+            url = f"https://patents.google.com/patent/{number}/en?oq={number}"
+            try:
+                driver.get(url)
+            except TimeoutException:
+                print('timeout')
+                timeouts_data.append(number)
+                continue
+            try:
+                WebDriverWait(driver, 5).until(
+                    EC.visibility_of_element_located((By.CLASS_NAME, "footer"))
+                )
+            except TimeoutException:
+                print('Loading took too much time!')
+                continue
+
+            html = driver.page_source
+            soup = BeautifulSoup(html, 'html.parser')
+
+            if not soup.find('h3', id='patentCitations'):
+                citation = {
+                    "publication_number": number,
+                    "patent_citation": 0,
+                    "publication_date": 0,
+                    "assignee": 0,
+                    "title": 0
+                }
+                patentCitations.append(citation)
+            else:
+                citations = get_data_tables(soup, number, 'patentCitations')
+                patentCitations.extend(iter(citations))
+
+            if not soup.find('h3', id='citedBy'):
+                citation = {
+                    "publication_number": number,
+                    "patent_citation": 0,
+                    "publication_date": 0,
+                    "assignee": 0,
+                    "title": 0
+                }
+                data_cited_by.append(citation)
+            else:
+                citedBy_s = get_data_tables(soup, number, 'citedBy')
+                data_cited_by.extend(iter(citedBy_s))
+
+            if not soup.find('h3', id='nplCitations'):
+                citation = {
+                    "publication_number": number,
+                    "patent_citation": 0,
+                    "publication_date": 0,
+                    "assignee": 0,
+                    "title": 0
+                }
+                non_patent_citations.append(citation)
+            else:
+                h3_pc = soup.find('h3', id='nplCitations')
+                pc_table = h3_pc.find_next('div', class_='responsive-table')
+                for tr in pc_table.find_all('div', class_='tr')[1:]:
+                    citation = {
+                        "publication_number": number,
+                        "patent_citation": 0,
+                        "publication_date": 0,
+                        "assignee": 0,
+                        "title": tr.text.replace('*', '').strip()
+                    }
+                    non_patent_citations.append(citation)
+            sleep_time(1)
 
     output_name = year_path.replace(".xlsx", "")
     output_file = os.path.join(output_citations, f"{output_name}_citations.xlsx")
