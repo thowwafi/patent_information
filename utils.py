@@ -7,6 +7,8 @@ from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.firefox.options import Options as FOptions
 from selenium.common.exceptions import SessionNotCreatedException
 from selenium.webdriver.support.ui import Select
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 import time
 import wget
 from xml.etree import ElementTree
@@ -21,6 +23,7 @@ def sleep_time(number):
 
 def set_up_selenium(browser='chrome'):
     options = ChromeOptions() if browser == 'chrome' else FOptions()
+    options.add_argument("no-sandbox")
     options.add_argument("--window-size=1920,1080")
     options.add_argument("--start-maximized")
     options.add_argument("--headless")
@@ -30,7 +33,7 @@ def set_up_selenium(browser='chrome'):
     if browser == 'chrome':
         driver_path = os.path.join(home, 'webdriver', system, 'chromedriver')
         try:
-            return webdriver.Chrome(options=options, executable_path=driver_path)
+            return webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
         except SessionNotCreatedException as e:
             message = str(e)
             print(message)
