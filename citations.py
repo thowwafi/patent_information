@@ -125,7 +125,7 @@ def get_citations(year_path):
                     "title": tr.text.replace('*', '').strip()
                 }
                 non_patent_citations.append(citation)
-        sleep_time(1)
+        # sleep_time(1)
 
     if timeouts_data:
         for index, number in enumerate(timeouts_data):
@@ -196,7 +196,7 @@ def get_citations(year_path):
                         "title": tr.text.replace('*', '').strip()
                     }
                     non_patent_citations.append(citation)
-            sleep_time(1)
+            # sleep_time(1)
 
     output_name = year_path.replace(".xlsx", "")
     output_file = os.path.join(output_citations, f"{output_name}_citations.xlsx")
