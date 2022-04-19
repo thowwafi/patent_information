@@ -7,7 +7,7 @@ import openpyxl
 import pandas as pd
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import TimeoutException, WebDriverException
 from selenium.webdriver.support import expected_conditions as EC
 import sys
 import time
@@ -65,6 +65,10 @@ def get_citations(year_path):
             driver.get(url)
         except TimeoutException:
             print('timeout')
+            timeouts_data.append(number)
+            continue
+        except WebDriverException:
+            print('webdriver')
             timeouts_data.append(number)
             continue
         try:
@@ -136,7 +140,9 @@ def get_citations(year_path):
                 driver.get(url)
             except TimeoutException:
                 print('timeout')
-                timeouts_data.append(number)
+                continue
+            except WebDriverException:
+                print('webdriver')
                 continue
             try:
                 WebDriverWait(driver, 5).until(
@@ -218,7 +224,7 @@ if __name__ == '__main__':
     from_year = int(sys.argv[1])
     to_year = int(sys.argv[2])
     extensionsToCheck = [str(i) for i in list(range(from_year, to_year))]
-    for year_path in sorted(os.listdir(outputs), reverse=True):
+    for year_path in sorted(os.listdir(outputs)):
         if any(ext in year_path for ext in extensionsToCheck):
             print(year_path)
             start = timer()
