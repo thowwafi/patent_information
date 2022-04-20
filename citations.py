@@ -18,6 +18,7 @@ from utils import set_up_selenium, sleep_time
 home = os.getcwd()
 outputs = os.path.join(home, 'output_excel')
 output_citations = os.path.join(home, 'output_citations')
+citation_csv = os.path.join(home, 'citation_csv')
 
 
 def get_data_tables(soup, number, div_id):
@@ -203,19 +204,29 @@ def get_citations(year_path):
                     }
                     non_patent_citations.append(citation)
             # sleep_time(1)
+    driver.quit()
 
+    df_patentCitations = pd.DataFrame(patentCitations)
+    df_non_patent_citations = pd.DataFrame(non_patent_citations)
+    df_data_cited_by = pd.DataFrame(data_cited_by)
     output_name = year_path.replace(".xlsx", "")
     output_file = os.path.join(output_citations, f"{output_name}_citations.xlsx")
-
     writer = pd.ExcelWriter(output_file, engine='openpyxl')
-    pd.DataFrame(patentCitations).to_excel(writer, sheet_name='PatentCitations', index=False)
-    pd.DataFrame(non_patent_citations).to_excel(writer, sheet_name='NonPatentCitations', index=False)
-    pd.DataFrame(data_cited_by).to_excel(writer, sheet_name='CitedBy', index=False)
+    df_patentCitations.to_excel(writer, sheet_name='PatentCitations', index=False)
+    df_non_patent_citations.to_excel(writer, sheet_name='NonPatentCitations', index=False)
+    df_data_cited_by.to_excel(writer, sheet_name='CitedBy', index=False)
     writer.save()
     writer.close()
 
-    driver.quit()
-
+    if not os.path.exists(citation_csv):
+        os.makedirs(citation_csv)
+    year_folder = os.path.join(citation_csv, output_name)
+    if not os.path.exists(year_folder):
+        os.makedirs(year_folder)
+    df_patentCitations.to_csv(os.path.join(year_folder, f"{output_name}_PatentCitations.csv"), index=False)
+    df_non_patent_citations.to_csv(os.path.join(year_folder, f"{output_name}_NonPatentCitations.csv"), index=False)
+    df_data_cited_by.to_csv(os.path.join(year_folder, f"{output_name}_CitedBy.csv"), index=False)
+    
 
 if __name__ == '__main__':
     if len(sys.argv) < 3:
