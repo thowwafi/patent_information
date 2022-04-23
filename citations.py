@@ -79,6 +79,10 @@ def get_citations(year_path):
         except TimeoutException:
             print('Loading took too much time!')
             continue
+        except WebDriverException:
+            print('webdriver')
+            timeouts_data.append(number)
+            continue
 
         html = driver.page_source
         soup = BeautifulSoup(html, 'html.parser')
@@ -151,6 +155,9 @@ def get_citations(year_path):
                 )
             except TimeoutException:
                 print('Loading took too much time!')
+                continue
+            except WebDriverException:
+                print('webdriver')
                 continue
 
             html = driver.page_source
