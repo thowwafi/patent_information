@@ -57,7 +57,7 @@ def get_citations(df):
 
     timeouts_data = []
     for index, row in df.iterrows():
-        if index > 5:
+        if index > 100:
             continue
         print(f"{index}/{df.shape[0]}")
         number = row['patentID'].replace(" ", "")
