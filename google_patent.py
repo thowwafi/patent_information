@@ -29,7 +29,15 @@ def get_data_tables(soup, number, div_id):
     for tr in pc_table.find_all('div', class_='tr'):
         if tr.text.strip().startswith("Publication") or tr.text.strip().startswith("Family"):
             continue
-        patent_citation = tr.find_all("span", class_="td")[0].text.replace("*", "").strip()
+        citation_number = tr.find_all("span", class_="td")[0].text.replace(" ", "").replace("\n", "")
+        cited_by = ""
+        if "*" in citation_number:
+            cited_by = "examiner"
+        elif "†" in citation_number:
+            cited_by = "third_party"
+        elif "‡" in citation_number:
+            cited_by = "family_to_family"
+        patent_citation = citation_number.strip()
         publication_date = tr.find_all("span", class_="td")[2].text.strip()
         assignee = tr.find_all("span", class_="td")[3].text.strip()
         title = tr.find_all("span", class_="td")[4].text.strip()
@@ -38,7 +46,8 @@ def get_data_tables(soup, number, div_id):
             "patent_citation": patent_citation,
             "publication_date": publication_date,
             "assignee": assignee,
-            "title": title
+            "title": title,
+            "cited_by": cited_by
         }
         data.append(citation)
     return data
