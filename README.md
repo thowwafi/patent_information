@@ -28,3 +28,7 @@
 ```
 nohup python -u script.py 2015 > output.log &
 ```
+### Latest Code (Read from 7171patentData.csv)
+```
+python google_patent.py
+```
