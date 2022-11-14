@@ -66,8 +66,8 @@ def get_citations(df):
 
     timeouts_data = []
     for index, row in df.iterrows():
-        if index > 100:
-            continue
+        # if index > 100:
+        #     continue
         print(f"{index}/{df.shape[0]}")
         number = row['patentID'].replace(" ", "")
         url = f"https://patents.google.com/patent/{number}/en?oq={number}"
@@ -130,12 +130,14 @@ def get_citations(df):
         claim_text = ""
         for claim in claim_id.find_all('claim'):
             claim_text += claim.text.strip().replace(";", " ").replace("\n", " ").replace("\t", " ") + " "
+        total_claims = len(claim_id.find_all('claim'))
 
         patent_data = {
             "publication_number": number,
             "status": status,
             "abstract": abstract,
-            "claims": claim_text
+            "claims": claim_text,
+            "total_claims": total_claims
         }
         patentData.append(patent_data)
 
