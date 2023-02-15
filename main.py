@@ -1,4 +1,5 @@
 from bs4 import BeautifulSoup
+from coc import get_coc
 import pandas as pd
 from pyexcelerate import Workbook
 import re
@@ -255,6 +256,8 @@ def new_get_patent_data(soup):
         data_['applicant_name'] = applicant['name']
         data_['applicant_address'] = address
         data_['country_code'] = country_code
+        coc_number = get_coc(applicant['name'], address, None)
+        data_['COC'] = coc_number
         datas.append(data_)
     return datas
     
