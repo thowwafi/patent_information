@@ -1,9 +1,8 @@
 #!/venv/bin/python
 
-import pdb
 from bs4 import BeautifulSoup
 from datetime import timedelta
-from main import get_patent_data, get_patent_datas
+from main import get_patent_data, get_patent_datas, new_get_patent_data
 import pandas as pd
 import requests
 import sys
@@ -13,7 +12,7 @@ from timeit import default_timer as timer
 
 AUTH_URL = "https://data.epo.org/pise-server/rest/authentication"
 SEACRH_URL = "https://data.epo.org/pise-server/rest/searches"
-DATABASE_ID = 'EPAB2022008'
+DATABASE_ID = 'EPAB2023006'
 
 def main(year):
     headers = {'Accept': 'application/json'}
@@ -60,11 +59,12 @@ def main(year):
     patents = []
     for index, row in enumerate(row_data):
         print('iter', year, f'{index}/{len(row_data)}')
+        print('row', row)
         key = row.get('key')
         patent_url = f"https://data.epo.org/pise-server/rest/databases/{DATABASE_ID}/documents/{key}?section=BIBLIOGRAPHIC_DATA"
         patent_res = session.get(patent_url, headers=headers)
         soup = BeautifulSoup(patent_res.content, 'html.parser')
-        patents_data = get_patent_datas(soup)
+        patents_data = new_get_patent_data(soup)
         for patent in patents_data:
             patents.append(patent)
 

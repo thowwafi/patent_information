@@ -24,6 +24,8 @@ citation_csv = os.path.join(home, 'citation_csv')
 
 def get_data_tables(soup, number, div_id):
     h3_pc = soup.find('h3', id=div_id)
+    if not h3_pc:
+        return []
     pc_table = h3_pc.find_next('div', class_='responsive-table')
     data = []
     for tr in pc_table.find_all('div', class_='tr'):

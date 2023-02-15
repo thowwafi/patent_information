@@ -13,6 +13,7 @@ import traceback
 import unicodedata
 from utils import *
 import logging
+from google_patent import get_data_tables
 
 
 logger = logging.getLogger()
@@ -45,33 +46,29 @@ def find_inventors(soup, data):
         return data
     ul = element.find_next_sibling('ul')
     if ul:
-        for i in range(1, 11):    
+        inventors_list = ul.find_all('li')
+        for i in range(1, len(inventors_list) + 1):
             applicants = ul.find_all('li')
             if i < len(applicants) or i == len(applicants):
                 index = i - 1
                 li = applicants[index]
                 name = li.p.find(text=True)
                 if name == 'The other inventor has waived his right to be thus mentioned.':
-                    data[f'{low_key}_last_name_{i}'] = None
-                    data[f'{low_key}_first_name_{i}'] = None
+                    data[f'{low_key}_name_{i}'] = None
                 else:
-                    data[f'{low_key}_last_name_{i}'] = name.split(',')[0]
-                    data[f'{low_key}_first_name_{i}'] = " ".join(name.split(',')[1:]).strip()
+                    data[f'{low_key}_name_{i}'] = name
                 address = li.span
                 data[f'{low_key}_address_{i}'] = unicodedata.normalize("NFKD", address.text) if address else None
             else:
-                data[f'{low_key}_last_name_{i}'] = None
-                data[f'{low_key}_first_name_{i}'] = None
+                data[f'{low_key}_name_{i}'] = None
                 data[f'{low_key}_address_{i}'] = None
     else:
         name = element.find_next('p').span.text
         if name == "The designation of the inventor has not yet been filed":
-            data[f'{low_key}_last_name_1'] = None
-            data[f'{low_key}_first_name_1'] = None
+            data[f'{low_key}_name_1'] = None
             data[f'{low_key}_address_1'] = None
         else:
-            data[f'{low_key}_last_name_1'] = name.split(',')[0]
-            data[f'{low_key}_first_name_1'] = " ".join(name.split(',')[1:]).strip()
+            data[f'{low_key}_name_1'] = name
             address = element.find_next('p').span.find_next('span')
             data[f'{low_key}_address_1'] = unicodedata.normalize("NFKD", address.text) if address else None
     return data
@@ -146,6 +143,121 @@ def find_applicants_list(soup):
             }
         )
     return datas
+
+def new_get_patent_data(soup):
+    applicants = find_applicants_list(soup)
+    application = find_text(soup, 'Application')
+    app_type, app_number, app_date = application.split(' ')
+
+    publication = find_text(soup, 'Publication')
+    publication_number = re.sub("[\(\[].*?[\)\]]", "", publication).strip()  # remove brackets
+    publication_date = publication_number.strip().split(" ")[-1]
+    print('publication_number', publication_number)
+
+    ipc_numbers = find_ipc_numbers_list(soup)
+    title_en = find_text(soup, 'Title (en)')
+
+    inventors = find_inventors(soup, {})
+    datas = []
+
+    driver = set_up_selenium(browser='chrome')
+    data = {
+        'applicant_name': "",
+        'applicant_address': "",
+        'country_code': "",
+        'application_type': app_type,
+        'application_number': app_number,
+        'application_date': app_date,
+        'publication_number': publication_number,
+        'publication_date': publication_date,
+        'ipc_main': ipc_numbers[0],
+        'number_IPC_others': len(ipc_numbers[1:]),
+        'ipc_main_GOOGLE': None,
+        'number_IPC_others_GOOGLE': None,
+        'COC': None,
+        'title': title_en,
+        'abstract': None,
+        'description': None,
+        'claims': None,
+        'TOTAL_NUMBER_OF_INVENTORS': len(inventors) // 2,
+        'Number_of_Patent_Citations_by_Applicants': None,
+        'Number_of_Patent_Citations_by_Examiner': None,
+        'Number_of_Patent_Citations_by_Third_Party': None,
+        'Number_of_Non_Patent_Citations_by_Applicants': None,
+        'Number_of_Non_Patent_Citations_by_Examiner': None,
+        'Number_of_Non_Patent_Citations_by_Third_Party': None,
+        'Number_of_Cited_By_by_Examiner': None,
+        'Number_of_Cited_By_by_Third_Party': None,
+        'Number_of_Cited_By_by_FamilyToFamily': None,
+    }
+    data.update(inventors)
+    pub_number = "".join(publication_number.split(" ")[:3])
+    url = f"https://patents.google.com/patent/{pub_number}/en?oq={pub_number}"
+    driver.get(url)
+    try:
+        WebDriverWait(driver, 5).until(
+            EC.visibility_of_element_located((By.CLASS_NAME, "footer"))
+        )
+    except TimeoutException:
+        print('Loading took too much time!')
+
+    html = driver.page_source
+    soup = BeautifulSoup(html, 'html.parser')
+    abstract_div = soup.find('div', class_='abstract style-scope patent-text')
+    abstract = abstract_div.text.strip().replace(";", " ").replace("\n", " ").replace("\t", " ") if abstract_div else ""
+    data['abstract'] = abstract
+
+    desc_section = soup.find('section', id='description')
+    desc_text = desc_section.text.replace(";", " ").replace("\n", " ").replace("\t", " ").strip()
+    desc_text_ = re.sub(' +', ' ', desc_text)
+    data['description'] = desc_text_
+
+    claim_id = soup.find('section', id='claims')
+    claim_text = claim_id.text.replace(";", " ").replace("\n", " ").replace("\t", " ").strip()
+    claim_text_ = re.sub(' +', ' ', claim_text)
+    if claim_id.find('ol'):
+        total_claims = len(claim_id.find('ol').find_all('li'))
+    elif claim_id.find_all('claim'):
+        total_claims = len(claim_id.find_all('claim'))
+    else:
+        total_claims = 0
+    data['claims'] = claim_text_
+    data['TOTAL_NUMBER_OF_CLAIMS'] = total_claims
+
+    classifications = soup.find('section', id="classifications")
+    first_true = classifications.find('state-modifier', class_="code style-scope classification-tree", hidden=None, first="true")
+    data['ipc_main_GOOGLE'] = first_true.text
+    more_ipc = classifications.find_all(class_="more style-scope classification-viewer", hidden=None)
+    if more_ipc:
+        more_ipc = more_ipc[0]
+        get_digit = re.findall(r'\d+', more_ipc.text)
+        data['number_IPC_others_GOOGLE'] = int(get_digit[0]) if get_digit else None
+
+    citations = get_data_tables(soup, publication_number, 'patentCitations')
+    data['Number_of_Patent_Citations_by_Applicants'] = 0
+    data['Number_of_Patent_Citations_by_Examiner'] = len([cit for cit in citations if "*" in cit['patent_citation']])
+    data['Number_of_Patent_Citations_by_Third_Party'] = len([cit for cit in citations if "†" in cit['patent_citation']])
+
+    citedBys = get_data_tables(soup, publication_number, 'citedBy')
+    data['Number_of_Cited_By_by_Examiner'] = len([cit for cit in citedBys if "*" in cit['patent_citation']])
+    data['Number_of_Cited_By_by_Third_Party'] = len([cit for cit in citedBys if "†" in cit['patent_citation']])
+    data['Number_of_Cited_By_by_FamilyToFamily'] = len([cit for cit in citedBys if "‡" in cit['patent_citation']])
+
+    h3_pc = soup.find('h3', id='nplCitations')
+    if h3_pc:
+        pc_table = h3_pc.find_next('div', class_='responsive-table')
+        data['Number_of_Non_Patent_Citations_by_Examiner'] = len([tr for tr in pc_table.find_all('div', class_='tr')[1:] if "*" in tr.text])
+        data['Number_of_Non_Patent_Citations_by_Third_Party'] = len([tr for tr in pc_table.find_all('div', class_='tr')[1:] if "†" in tr.text])
+    for applicant in applicants:
+        data_ = data.copy()
+        address = applicant['address']
+        country_code = address.split(' ')[-1].strip()
+        data_['applicant_name'] = applicant['name']
+        data_['applicant_address'] = address
+        data_['country_code'] = country_code
+        datas.append(data_)
+    return datas
+    
 
 
 def get_patent_datas(soup):
