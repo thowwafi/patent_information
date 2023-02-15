@@ -32,3 +32,9 @@ nohup python -u script.py 2015 > output.log &
 ```
 python google_patent.py
 ```
+
+
+## Update 15 Feb 2023
+Execute the following command to run the script
+```python script.py 2011 2012```
+
